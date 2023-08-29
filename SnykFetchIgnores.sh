@@ -1,19 +1,17 @@
 set +x
 
-TOKEN="Your token here"
+PROJECT_ID="491d9894-c158-4a71-8a53-7b1101c1f535"
 
-curl https://api.snyk.io/v1/org/arctiq-nfr-shared/project/a3eee9bd-3cfd-470d-9d80-2055f898a70f/ignores \
-   -H "Accept: application/json" \
-   -H "Authorization: token ${TOKEN}" > ignores.json 
-
+curl https://api.snyk.io/v1/org/arctiq-nfr-shared/project/${PROJECT_ID}/ignores \
+    -H "Accept: application/json" \
+    -H "Authorization: token ${SNYK_TOKEN}" >ignores.json
 set -x
-
 
 IGNORES=$(jq 'to_entries[] | .key' ignores.json)
 
-for ISSUE in $IGNORES
-do
-    # snyk ignore --id="SNYK-ALPINE39-MUSL-458529" --reason="for fun" --expiry=2023-09-28T14:46:49.015Z -d
-    snyk ignore --id=${ISSUE} --expiry=2023-09-28T14:46:49.015Z --reason="Skip CI"
-done
+rm -rf .snyk
 
+for ISSUE in $IGNORES; do
+    ID=$(echo "$ISSUE" | tr -d '"')
+    snyk ignore --id=$ID --expiry=2023-09-28T14:46:49.015Z --reason="We will fix this some day..."
+done
