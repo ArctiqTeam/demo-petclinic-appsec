@@ -41,6 +41,7 @@ jobs:
       - name: Run Snyk scan
         id: snyk-scan
         run: |
+          cat .snyk
           snyk iac test > snyk_report.txt || true
 
       - name: Read Snyk IaC report file
