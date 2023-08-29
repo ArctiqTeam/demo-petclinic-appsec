@@ -35,11 +35,13 @@ jobs:
       #         ID=$(echo "$ISSUE" | tr -d '"')
       #         snyk ignore --id=$ID --expiry=2023-09-28T14:46:49.015Z --reason="We will fix this some day..."
       #     done
+      #
+      #     echo "##### Snyk files content: #####"
+      #     cat .snyk
 
       - name: Run Snyk scan
         id: snyk-scan
         run: |
-          cat .snyk
           snyk iac test > snyk_report.txt || true
 
       - name: Read Snyk IaC report file
