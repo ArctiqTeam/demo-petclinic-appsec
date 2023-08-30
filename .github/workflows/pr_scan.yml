@@ -63,6 +63,7 @@ jobs:
           path: snyk_report.txt
 
       - name: Install Azure CLI
+        if: steps.check-medium-issues.outputs.number == '1'
         run: npm install -g azure-cli
 
       - name: Open Azure DevOps Ticket
