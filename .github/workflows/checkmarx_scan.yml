@@ -21,33 +21,29 @@ jobs:
           cx_tenant: nfr_arctiq
           cx_client_id: ${{ secrets.CX_CLIENT_ID }}
           cx_client_secret: ${{ secrets.CX_CLIENT_SECRET }}
-          additional_params: --output-path outputs
+          additional_params: --output-path .
 
-      - name: Show current directory and outputs dir
-        run: |
-          echo "ls here"
-          ls
-          echo "ls output path"
-          ls outputs
+      - name: Print checkmarx output from file
+        run: cat output.log
 
       - name: Extract SAST number
         id: sast_number
         run: |
-          SAST_NUMBER=$(awk -F':' '/SAST:/ {print $2}' cx_result.md | tr -d '[:space:]')
+          SAST_NUMBER=$(awk -F':' '/SAST:/ {print $2}' output.log | tr -d '[:space:]')
           echo "SAST Number is $SAST_NUMBER"
           echo "::set-output name=number::$SAST_NUMBER"
-      
+
       - name: Upload Checkmarx scan report
         uses: actions/upload-artifact@v2
         with:
           name: checkmarx-report
-          path: cx_result.md
+          path: output.log
 
       - name: Read Checkmarx results into variable
         if: steps.sast_number.outputs.number == '2'
         id: read_results
         run: |
-          CX_RESULTS=$(cat cx_result.md)
+          CX_RESULTS=$(cat output.log)
           # Escape characters that might interfere with shell execution
           CX_RESULTS="${CX_RESULTS//'%'/'%25'}"
           CX_RESULTS="${CX_RESULTS//$'\n'/'%0A'}"
@@ -67,7 +63,7 @@ jobs:
           description="## Checkmarx Scan Results${{ steps.read_results.outputs.checkmarx_results }}"
           az devops configure --defaults organization=https://dev.azure.com/markvolfson/ project=appsec-demo
           az boards work-item create --title "PR Failed - Snyk Results" --type "Task" --description "$description"
-      
+
       - name: Quality Gate
         id: quality-gate
         if: steps.sast_number.outputs.number == '2'
