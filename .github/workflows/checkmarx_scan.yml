@@ -24,8 +24,7 @@ jobs:
           additional_params: --output-path .
 
       - name: Save relevant summary to cx_result.md
-        run: |
-          ls
+        run: echo "${{ steps.scan.outputs.cxcli }}"
 
       - name: Extract SAST number
         id: sast_number
