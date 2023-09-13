@@ -25,7 +25,7 @@ jobs:
 
       - name: Save relevant summary to cx_result.md
         run: |
-          awk '/Scan Summary:/{flag=1; next} /Checkmarx One - Scan Summary & Details:/{flag=0} flag' checkmarx_output.txt > cx_result.md
+          ls
 
       - name: Extract SAST number
         id: sast_number
