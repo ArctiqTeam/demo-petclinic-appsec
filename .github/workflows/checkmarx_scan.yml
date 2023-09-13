@@ -25,7 +25,7 @@ jobs:
       - name: Send output to file
         env:
           CONTENT: ${{ steps.scan.outputs.cxcli }}
-        run: echo cx_result.md
+        run: echo "$(cat cx_result.md)"
 
       - name: Upload Checkmarx scan report
         uses: actions/upload-artifact@v2
