@@ -21,13 +21,17 @@ jobs:
           cx_tenant: nfr_arctiq
           cx_client_id: ${{ secrets.CX_CLIENT_ID }}
           cx_client_secret: ${{ secrets.CX_CLIENT_SECRET }}
-          additional_params: --output-path ./results.txt
+          additional_params: --output-path outputs
 
       - name: Print output
         run: cat ./results.txt
 
-      # - name: Save relevant summary to cx_result.md
-      #   run: echo "${{ steps.scan.outputs.cxcli }}"
+      - name: Save relevant summary to cx_result.md
+        run: |
+          echo "ls here"
+          ls
+          echo "ls output path"
+          ls outputs
 
       # - name: Extract SAST number
       #   id: sast_number
