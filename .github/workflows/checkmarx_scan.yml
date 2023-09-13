@@ -23,9 +23,9 @@ jobs:
           cx_client_secret: ${{ secrets.CX_CLIENT_SECRET }}
 
       - name: Send output to file
-        run: echo $CONTENT >> checkmarx-report.txt
-        with:
+        env:
           CONTENT: ${{ steps.scan.outputs.cxcli }}
+        run: echo $CONTENT >> checkmarx-report.txt
 
       - name: Upload Checkmarx scan report
         uses: actions/upload-artifact@v2
