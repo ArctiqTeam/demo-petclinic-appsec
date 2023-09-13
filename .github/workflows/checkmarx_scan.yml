@@ -23,9 +23,11 @@ jobs:
           cx_client_secret: ${{ secrets.CX_CLIENT_SECRET }}
 
       - name: Send output to file
-        env:
-          CONTENT: ${{ steps.scan.outputs.cxcli }}
-        run: echo "$(cat cx_result.md)"
+        # env:
+        #   CONTENT: ${{ steps.scan.outputs.cxcli }}
+        run: |
+          pwd
+          find . -name cx_result.md
 
       - name: Upload Checkmarx scan report
         uses: actions/upload-artifact@v2
