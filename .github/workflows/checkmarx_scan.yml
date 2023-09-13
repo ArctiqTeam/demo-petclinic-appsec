@@ -21,51 +21,54 @@ jobs:
           cx_tenant: nfr_arctiq
           cx_client_id: ${{ secrets.CX_CLIENT_ID }}
           cx_client_secret: ${{ secrets.CX_CLIENT_SECRET }}
-          additional_params: --output-path .
+          additional_params: --output-path ./results.txt
 
-      - name: Save relevant summary to cx_result.md
-        run: echo "${{ steps.scan.outputs.cxcli }}"
+      - name: Print output
+        run: cat ./results.txt
 
-      - name: Extract SAST number
-        id: sast_number
-        run: |
-          SAST_NUMBER=$(awk -F':' '/SAST:/ {print $2}' cx_result.md | tr -d '[:space:]')
-          echo "SAST Number is $SAST_NUMBER"
-          echo "::set-output name=number::$SAST_NUMBER"
-      
-      - name: Upload Checkmarx scan report
-        uses: actions/upload-artifact@v2
-        with:
-          name: checkmarx-report
-          path: cx_result.md
+      # - name: Save relevant summary to cx_result.md
+      #   run: echo "${{ steps.scan.outputs.cxcli }}"
 
-      - name: Read Checkmarx results into variable
-        if: steps.sast_number.outputs.number == '2'
-        id: read_results
-        run: |
-          CX_RESULTS=$(cat cx_result.md)
-          # Escape characters that might interfere with shell execution
-          CX_RESULTS="${CX_RESULTS//'%'/'%25'}"
-          CX_RESULTS="${CX_RESULTS//$'\n'/'%0A'}"
-          CX_RESULTS="${CX_RESULTS//$'\r'/'%0D'}"
-          echo "::set-output name=checkmarx_results::$CX_RESULTS"
+      # - name: Extract SAST number
+      #   id: sast_number
+      #   run: |
+      #     SAST_NUMBER=$(awk -F':' '/SAST:/ {print $2}' cx_result.md | tr -d '[:space:]')
+      #     echo "SAST Number is $SAST_NUMBER"
+      #     echo "::set-output name=number::$SAST_NUMBER"
 
-      - name: Install Azure CLI
-        if: steps.sast_number.outputs.number == '2'
-        run: npm install -g azure-cli
+      # - name: Upload Checkmarx scan report
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: checkmarx-report
+      #     path: cx_result.md
 
-      - name: Open Azure DevOps Ticket
-        if: steps.sast_number.outputs.number == '2'
-        run: |
-          az config set extension.use_dynamic_install=yes_without_prompt
-          az extension add --name azure-devops
-          echo ${{ secrets.PAT_AZURE }} | az devops login --organization "https://dev.azure.com/markvolfson/"
-          description="## Checkmarx Scan Results${{ steps.read_results.outputs.checkmarx_results }}"
-          az devops configure --defaults organization=https://dev.azure.com/markvolfson/ project=appsec-demo
-          az boards work-item create --title "PR Failed - Snyk Results" --type "Task" --description "$description"
-      
-      - name: Quality Gate
-        id: quality-gate
-        if: steps.sast_number.outputs.number == '2'
-        run: |
-          failure("Code contains security vulnerabilities")
+      # - name: Read Checkmarx results into variable
+      #   if: steps.sast_number.outputs.number == '2'
+      #   id: read_results
+      #   run: |
+      #     CX_RESULTS=$(cat cx_result.md)
+      #     # Escape characters that might interfere with shell execution
+      #     CX_RESULTS="${CX_RESULTS//'%'/'%25'}"
+      #     CX_RESULTS="${CX_RESULTS//$'\n'/'%0A'}"
+      #     CX_RESULTS="${CX_RESULTS//$'\r'/'%0D'}"
+      #     echo "::set-output name=checkmarx_results::$CX_RESULTS"
+
+      # - name: Install Azure CLI
+      #   if: steps.sast_number.outputs.number == '2'
+      #   run: npm install -g azure-cli
+
+      # - name: Open Azure DevOps Ticket
+      #   if: steps.sast_number.outputs.number == '2'
+      #   run: |
+      #     az config set extension.use_dynamic_install=yes_without_prompt
+      #     az extension add --name azure-devops
+      #     echo ${{ secrets.PAT_AZURE }} | az devops login --organization "https://dev.azure.com/markvolfson/"
+      #     description="## Checkmarx Scan Results${{ steps.read_results.outputs.checkmarx_results }}"
+      #     az devops configure --defaults organization=https://dev.azure.com/markvolfson/ project=appsec-demo
+      #     az boards work-item create --title "PR Failed - Snyk Results" --type "Task" --description "$description"
+
+      # - name: Quality Gate
+      #   id: quality-gate
+      #   if: steps.sast_number.outputs.number == '2'
+      #   run: |
+      #     failure("Code contains security vulnerabilities")
