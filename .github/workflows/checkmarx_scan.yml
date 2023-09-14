@@ -43,12 +43,9 @@ jobs:
         if: steps.sast_number.outputs.number == '2'
         id: read_results
         run: |
-          CX_RESULTS=$(cat output.log)
-          # Escape characters that might interfere with shell execution
-          CX_RESULTS="${CX_RESULTS//'%'/'%25'}"
-          CX_RESULTS="${CX_RESULTS//$'\n'/'%0A'}"
-          CX_RESULTS="${CX_RESULTS//$'\r'/'%0D'}"
-          echo "::set-output name=checkmarx_results::$CX_RESULTS"
+          awk '/-----------------------------------/ {flag=1; next} /-----------------------------------/ {flag=0} flag' output.log > results_table.md
+          checkmarx_results=$(cat results_table.md)
+          echo "::set-output name=checkmarx_results::$checkmarx_results"
 
       - name: Install Azure CLI
         if: steps.sast_number.outputs.number == '2'
@@ -60,7 +57,8 @@ jobs:
           az config set extension.use_dynamic_install=yes_without_prompt
           az extension add --name azure-devops
           echo ${{ secrets.PAT_AZURE }} | az devops login --organization "https://dev.azure.com/markvolfson/"
-          description="## Checkmarx Scan Results${ steps.read_results.outputs.checkmarx_results }"
+          description="## Checkmarx Scan Results\n${{ steps.read_results.outputs.checkmarx_results }}"
+          escaped_description=$(echo -n "$description" | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
           az devops configure --defaults organization=https://dev.azure.com/markvolfson/ project=appsec-demo
           az boards work-item create --title "PR Failed - Snyk Results" --type "Task" --description "$description"
 
