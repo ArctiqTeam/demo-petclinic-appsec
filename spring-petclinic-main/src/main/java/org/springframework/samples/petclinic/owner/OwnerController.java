@@ -25,6 +25,9 @@ import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.ModelAndView;
+import org.apache.commons.text.StringEscapeUtils;
+
+// import io.micrometer.core.instrument.util.StringEscapeUtils;
 
 import javax.validation.Valid;
 import java.util.Collection;
@@ -135,7 +138,9 @@ class OwnerController {
 	public ModelAndView showOwner(@PathVariable("ownerId") int ownerId) {
 		ModelAndView mav = new ModelAndView("owners/ownerDetails");
 		Owner owner = this.owners.findById(ownerId);
+		owner.setFirstName(StringEscapeUtils.escapeHtml4(owner.getFirstName()));
 		for (Pet pet : owner.getPets()) {
+			pet.setName(StringEscapeUtils.escapeHtml4(pet.getName()));
 			pet.setVisitsInternal(visits.findByPetId(pet.getId()));
 		}
 		mav.addObject(owner);
