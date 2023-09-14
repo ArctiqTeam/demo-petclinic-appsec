@@ -29,7 +29,7 @@ jobs:
       - name: Extract SAST number
         id: sast_number
         run: |
-          SAST_NUMBER=$(awk -F':' '/SAST:/ {print $2}' output.log | tr -d '[:space:]')
+          SAST_NUMBER=$(awk -F':' '/SAST:/ {gsub(/[[:space:]|]/, "", $2); print $2}' output.log)
           echo "SAST Number is $SAST_NUMBER"
           echo "::set-output name=number::$SAST_NUMBER"
 
