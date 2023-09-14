@@ -39,13 +39,12 @@ jobs:
           name: checkmarx-report
           path: output.log
 
-      - name: Read Checkmarx results into variable
-        if: steps.sast_number.outputs.number == '2'
-        id: read_results
+      - name: Extract relevant information for Azure DevOps Ticket
+        id: extract_info
         run: |
-          awk '/-----------------------------------/ {flag=1; next} /-----------------------------------/ {flag=0} flag' output.log > results_table.md
-          checkmarx_results=$(cat results_table.md)
-          echo "::set-output name=checkmarx_results::$checkmarx_results"
+          DESCRIPTION=$(awk '/Scan Summary:/{flag=1; next} /Checkmarx One - Scan Summary & Details:/{flag=0} flag' output.log)
+          DESCRIPTION="${DESCRIPTION//$'\n'/\\n}"
+          echo "::set-output name=description::$DESCRIPTION"
 
       - name: Install Azure CLI
         if: steps.sast_number.outputs.number == '2'
@@ -56,14 +55,9 @@ jobs:
         run: |
           az config set extension.use_dynamic_install=yes_without_prompt
           az extension add --name azure-devops
-          echo ${{ secrets.PAT_AZURE }} | az devops login --organization "https://dev.azure.com/markvolfson/"
-          
-          checkmarx_results="${{ steps.read_results.outputs.checkmarx_results }}"
-          description="## Checkmarx Scan Results\n$checkmarx_results"
-          escaped_description=$(echo -e "$description" | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
-          
+          echo ${{ secrets.PAT_AZURE }} | az devops login --organization "https://dev.azure.com/markvolfson/"  
           az devops configure --defaults organization=https://dev.azure.com/markvolfson/ project=appsec-demo
-          az boards work-item create --title "PR Failed - Checkmarx Results" --type "Task" --description "$description"
+          az boards work-item create --title "PR Failed - Checkmarx Results" --type "Task" --description "${{ steps.extract_info.outputs.description }}"
 
       - name: Quality Gate
         id: quality-gate
