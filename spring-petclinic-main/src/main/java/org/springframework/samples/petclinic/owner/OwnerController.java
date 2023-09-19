@@ -138,17 +138,10 @@ class OwnerController {
 	public ModelAndView showOwner(@PathVariable("ownerId") int ownerId) {
 		ModelAndView mav = new ModelAndView("owners/ownerDetails");
 		Owner owner = this.owners.findById(ownerId);
-		owner.setFirstName(StringEscapeUtils.escapeHtml4(owner.getFirstName()));
-		owner.setLastName(StringEscapeUtils.escapeHtml4(owner.getLastName()));
-		owner.setAddress(StringEscapeUtils.escapeHtml4(owner.getAddress()));
-		owner.setCity(StringEscapeUtils.escapeHtml4(owner.getCity()));
-		owner.setTelephone(StringEscapeUtils.escapeHtml4(owner.getTelephone()));
 		for (Pet pet : owner.getPets()) {
-			pet.setName(StringEscapeUtils.escapeHtml4(pet.getName()));
 			pet.setVisitsInternal(visits.findByPetId(pet.getId()));
 		}
 		mav.addObject(owner);
 		return mav;
 	}
-
 }
