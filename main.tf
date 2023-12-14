@@ -44,6 +44,7 @@ resource "azurerm_container_group" "app" {
       CONTRAST__SERVER__NAME=var.servername
       CONTRAST__SERVER__ENVIRONMENT=var.environment
       CONTRAST__SERVER__TAGS=var.servertags
+      
     }
   }
 }

@@ -28,16 +28,14 @@ spec:
           mountPath: "/etc/contrast"
         resources:
           requests:
-            cpu: 1.0
-            memory: 2Gi
+            cpu: 0.5
+            memory: 0.5Gi
           limits:
+            cpu: 1.0
+            memory: 1Gi
+      # Volume from contrast-security secret     
             cpu: 2.0
             memory: 4Gi
-        securityContext:
-          allowPrivilegeEscalation: false
-          runAsNonRoot: true
-          readOnlyRootFilesystem: true
-      # Volume from contrast-security secret
       volumes:
       - name: contrast-security
         secret:
