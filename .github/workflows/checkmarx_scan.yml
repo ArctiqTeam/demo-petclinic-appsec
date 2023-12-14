@@ -1,0 +1,66 @@
+name: Checkmarx Scan
+
+on:
+  pull_request:
+    branches:
+      - master_1
+
+jobs:
+  checkmarx-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Checkmarx AST CLI Action
+        id: scan
+        uses: checkmarx/ast-github-action@main #Github Action version
+        with:
+          base_uri: https://ast.checkmarx.net/
+          cx_tenant: nfr_arctiq
+          cx_client_id: ${{ secrets.CX_CLIENT_ID }}
+          cx_client_secret: ${{ secrets.CX_CLIENT_SECRET }}
+          additional_params: --output-path .
+
+      - name: Print checkmarx output from file
+        run: cat output.log
+
+      - name: Extract SAST number
+        id: sast_number
+        run: |
+          SAST_NUMBER=$(awk -F':' '/SAST:/ {gsub(/[[:space:]|]/, "", $2); print $2}' output.log)
+          echo "SAST Number is $SAST_NUMBER"
+          echo "::set-output name=number::$SAST_NUMBER"
+
+      - name: Upload Checkmarx scan report
+        uses: actions/upload-artifact@v2
+        with:
+          name: checkmarx-report
+          path: output.log
+
+      - name: Extract relevant information for Azure DevOps Ticket
+        id: extract_info
+        run: |
+          DESCRIPTION=$(awk '/Scan Summary:/{flag=1; next} /Checkmarx One - Scan Summary & Details:/{flag=0} flag' output.log)
+          DESCRIPTION="${DESCRIPTION//$'\n'/\\n}"
+          echo "::set-output name=description::$DESCRIPTION"
+
+      - name: Install Azure CLI
+        if: steps.sast_number.outputs.number == '2'
+        run: npm install -g azure-cli
+
+      - name: Open Azure DevOps Ticket
+        if: steps.sast_number.outputs.number == '2'
+        run: |
+          az config set extension.use_dynamic_install=yes_without_prompt
+          az extension add --name azure-devops
+          echo ${{ secrets.PAT_AZURE }} | az devops login --organization "https://dev.azure.com/markvolfson/"  
+          az devops configure --defaults organization=https://dev.azure.com/markvolfson/ project=appsec-demo
+          az boards work-item create --title "PR Failed - Checkmarx Results" --type "Task" --description "${{ steps.extract_info.outputs.description }}"
+
+      - name: Quality Gate
+        id: quality-gate
+        if: steps.sast_number.outputs.number == '2'
+        run: |
+          failure("Code contains security vulnerabilities")
