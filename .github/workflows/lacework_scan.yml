@@ -32,27 +32,36 @@ jobs:
           LW_API_KEY: ${{ secrets.LW_API_KEY }}
           LW_API_SECRET: ${{ secrets.LW_API_SECRET }}
 
-      - name: Use Scan Results
+      - name: Analyze the scan results
+        id: analyze_step
         run: |
               # Use the output from the previous step
               echo "Scan Results: ${{ steps.scan_step.outputs.scan_results }}"
+              echo "Scan Results: $scan_results"
+              # Check if "FAIL" is part of the scan results
+              if echo "$scan_results" | grep -q "FAIL"; then
+                echo "::set-output name=has_failures::true"
+              else
+                echo "::set-output name=has_failures::false"
+              fi
 
-      # - name: Install Azure CLI
-      #   run: |
-      #     ls -al
-      #     npm install -g azure-cli
+      - name: Install Azure CLI
+        if: steps.analyze_step.outputs.has_failures == 'true'
+        run: |
+          ls -al
+          npm install -g azure-cli
 
-      # - name: Open Azure DevOps Ticket
-      #   if: steps.sast_number.outputs.number == '2'
-      #   run: |
-      #     az config set extension.use_dynamic_install=yes_without_prompt
-      #     az extension add --name azure-devops
-      #     echo ${{ secrets.PAT_AZURE }} | az devops login --organization "https://dev.azure.com/markvolfson/"  
-      #     az devops configure --defaults organization=https://dev.azure.com/markvolfson/ project=appsec-demo
-      #     az boards work-item create --title "PR Failed - Checkmarx Results" --type "Task" --description "${{ steps.extract_info.outputs.description }}"
+      - name: Open Azure DevOps Ticket
+        if: steps.analyze_step.outputs.has_failures == 'true'
+        run: |
+          az config set extension.use_dynamic_install=yes_without_prompt
+          az extension add --name azure-devops
+          echo ${{ secrets.PAT_AZURE }} | az devops login --organization "https://dev.azure.com/markvolfson/"  
+          az devops configure --defaults organization=https://dev.azure.com/markvolfson/ project=appsec-demo
+          az boards work-item create --title "PR Failed - Checkmarx Results" --type "Task" --description "${{ steps.scan_step.outputs.scan_results }}"
 
-      # - name: Quality Gate
-      #   id: quality-gate
-      #   if: steps.sast_number.outputs.number == '2'
-      #   run: |
-      #     failure("Code contains security vulnerabilities")
+      - name: Quality Gate
+        id: quality-gate
+        if: steps.analyze_step.outputs.has_failures == 'true'
+        run: |
+          failure("Code contains security vulnerabilities")
