@@ -23,10 +23,9 @@ jobs:
               echo "WORKSPACE=src" >> env.list
               # if we want to fail the step for any critical failed findings (violations) in the assessment scan
               # echo "EXIT_FLAG='Medium'" >> env.list 
-              ls -al
               docker run --env-file env.list -v "$(pwd):/app/src" lacework/codesec-iac:latest > output.txt
-              ls -al
-              cat output.txt
+              # display output.txt in the console
+              cat ./output.txt
               echo "::set-output name=scan_results::$(output.txt)"
         env:
           LW_ACCOUNT: ${{ secrets.LW_ACCOUNT }}
