@@ -25,6 +25,9 @@ import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.ModelAndView;
+import org.apache.commons.text.StringEscapeUtils;
+
+// import io.micrometer.core.instrument.util.StringEscapeUtils;
 
 import javax.validation.Valid;
 import java.util.Collection;
@@ -124,22 +127,6 @@ class OwnerController {
 			this.owners.save(owner);
 			return "redirect:/owners/{ownerId}";
 		}
-	}
-
-	/**
-	 * Custom handler for displaying an owner.
-	 * @param ownerId the ID of the owner to display
-	 * @return a ModelMap with the model attributes for the view
-	 */
-	@GetMapping("/owners/{ownerId}")
-	public ModelAndView showOwner(@PathVariable("ownerId") int ownerId) {
-		ModelAndView mav = new ModelAndView("owners/ownerDetails");
-		Owner owner = this.owners.findById(ownerId);
-		for (Pet pet : owner.getPets()) {
-			pet.setVisitsInternal(visits.findByPetId(pet.getId()));
-		}
-		mav.addObject(owner);
-		return mav;
 	}
 
 }
