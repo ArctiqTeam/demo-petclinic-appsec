@@ -57,7 +57,7 @@ jobs:
           az extension add --name azure-devops
           echo ${{ secrets.PAT_AZURE }} | az devops login --organization "https://dev.azure.com/markvolfson/"  
           az devops configure --defaults organization=https://dev.azure.com/markvolfson/ project=appsec-demo
-          az boards work-item create --title "PR Failed - Checkmarx Results" --type "Task" --description "${{ steps.scan_step.outputs.scan_results }}"
+          az boards work-item create --title "PR Failed - Lacework Results" --type "Task" --description "${{ steps.scan_step.outputs.scan_results }}"
 
       - name: Quality Gate
         id: quality-gate
