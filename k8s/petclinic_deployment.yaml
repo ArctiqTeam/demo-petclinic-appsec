@@ -12,15 +12,16 @@ spec:
       labels:
         component: petclinic
     spec:
+      # Pet Clinic App container
       containers:
       - name: petclinic
-        image: contrastsecuritydemo/spring-petclinic:k8s
+        image: us-central1-docker.pkg.dev/arc-mark-volfson-sandbox/petclinic-demo/petclinic:v1
         ports: 
           - containerPort: 8080
         envFrom:
           - configMapRef:
-              name: contrast-config  
-        # Volume Mount for contrast_security.yaml  
+              name: contrast-config
+        #Volume Mount for contrast_security.yaml  
         volumeMounts:
         - name: contrast-security
           readOnly: false
@@ -33,9 +34,9 @@ spec:
             cpu: 1.0
             memory: 1Gi
       # Volume from contrast-security secret     
+            cpu: 2.0
+            memory: 4Gi
       volumes:
       - name: contrast-security
         secret:
           secretName: contrast-security
-
-

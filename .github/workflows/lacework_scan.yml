@@ -1,0 +1,66 @@
+name: Lacework Scan
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  lacework-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Scan the repo for vulnerabilities in IaC
+        id: scan_step
+        run: |
+              # Required to pass the GITHUB and Lacework (LW) environment variables to use
+              env | grep "GITHUB_\|LW_\|CI_" > env.list
+              # Required command based on what you want to scan in the repository
+              echo "SCAN_COMMAND=tf-scan" >> env.list
+              # Required if you are not mounting the volume on /app
+              echo "WORKSPACE=src" >> env.list
+              # if we want to fail the step for any critical failed findings (violations) in the assessment scan
+              # echo "EXIT_FLAG='Medium'" >> env.list 
+              docker run --env-file env.list -v "$(pwd):/app/src" lacework/codesec-iac:latest | tee output.txt
+              scan_results=$(sed -n '2p' output.txt)
+              echo "::set-output name=scan_results::$scan_results"
+        env:
+          LW_ACCOUNT: ${{ secrets.LW_ACCOUNT }}
+          LW_API_KEY: ${{ secrets.LW_API_KEY }}
+          LW_API_SECRET: ${{ secrets.LW_API_SECRET }}
+
+      - name: Analyze the scan results
+        id: analyze_step
+        run: |
+              # Use the output from the previous step
+              echo "Scan Results: ${{ steps.scan_step.outputs.scan_results }}"
+              # Check if "FAIL" is part of the scan results
+              if echo "${{ steps.scan_step.outputs.scan_results }}" | grep -q "FAIL"; then
+                echo "::set-output name=has_failures::true"
+              else
+                echo "::set-output name=has_failures::false"
+              fi
+
+      - name: Install Azure CLI
+        if: steps.analyze_step.outputs.has_failures == 'true'
+        run: |
+          ls -al
+          npm install -g azure-cli
+
+      - name: Open Azure DevOps Ticket
+        if: steps.analyze_step.outputs.has_failures == 'true'
+        run: |
+          az config set extension.use_dynamic_install=yes_without_prompt
+          az extension add --name azure-devops
+          echo ${{ secrets.PAT_AZURE }} | az devops login --organization "https://dev.azure.com/markvolfson/"  
+          az devops configure --defaults organization=https://dev.azure.com/markvolfson/ project=appsec-demo
+          az boards work-item create --title "PR Failed - Lacework Results" --type "Task" --description "${{ steps.scan_step.outputs.scan_results }}"
+
+      - name: Quality Gate
+        id: quality-gate
+        if: steps.analyze_step.outputs.has_failures == 'true'
+        run: |
+          failure("Code contains security vulnerabilities")
