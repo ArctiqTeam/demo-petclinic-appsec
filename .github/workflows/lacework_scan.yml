@@ -37,9 +37,8 @@ jobs:
         run: |
               # Use the output from the previous step
               echo "Scan Results: ${{ steps.scan_step.outputs.scan_results }}"
-              echo "Scan Results: $scan_results"
               # Check if "FAIL" is part of the scan results
-              if echo "$scan_results" | grep -q "FAIL"; then
+              if echo "${{ steps.scan_step.outputs.scan_results }}" | grep -q "FAIL"; then
                 echo "::set-output name=has_failures::true"
               else
                 echo "::set-output name=has_failures::false"
