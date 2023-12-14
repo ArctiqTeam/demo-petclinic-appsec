@@ -3,7 +3,7 @@ name: Deploy to GKE
 on:
   push:
     branches:
-      - master
+      - master_1
 
 env:
   PROJECT_ID: arc-mark-volfson-sandbox
