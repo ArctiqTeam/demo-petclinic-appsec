@@ -25,8 +25,8 @@ jobs:
               # if we want to fail the step for any critical failed findings (violations) in the assessment scan
               # echo "EXIT_FLAG='Medium'" >> env.list 
               docker run --env-file env.list -v "$(pwd):/app/src" lacework/codesec-iac:latest | tee output.txt
-              scan_results=$(cat output.txt)
-              echo "::set-output name=scan_results::$scan_results"
+              scan_results_encoded=$(echo "$scan_results" | base64 -w 0)
+              echo "::set-output name=scan_results::$scan_results_encoded"
         env:
           LW_ACCOUNT: ${{ secrets.LW_ACCOUNT }}
           LW_API_KEY: ${{ secrets.LW_API_KEY }}
