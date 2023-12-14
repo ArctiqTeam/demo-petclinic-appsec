@@ -8,7 +8,7 @@ on:
 jobs:
   snyk-scan:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -18,6 +18,26 @@ jobs:
 
       - name: Authenticate with Snyk
         run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      - name: Fetch ignored issues from snyk project
+        run: |
+          # Fetch current project ID here
+          # Hardcoded for demo POC purposes
+          PROJECT_ID="491d9894-c158-4a71-8a53-7b1101c1f535"
+
+          set +x
+          curl https://api.snyk.io/v1/org/arctiq-nfr-shared/project/${PROJECT_ID}/ignores \
+              -H "Accept: application/json" \
+              -H "Authorization: token ${{ secrets.SNYK_TOKEN }}" >ignores.json
+          set -x
+          IGNORES=$(jq 'to_entries[] | .key' ignores.json)
+
+          rm -rf .snyk
+
+          for ISSUE in $IGNORES; do
+              ID=$(echo "$ISSUE" | tr -d '"')
+              snyk ignore --id=$ID --expiry=2023-09-28T14:46:49.015Z --reason="We will fix this some day..."
+          done
 
       - name: Run Snyk scan
         id: snyk-scan
@@ -33,9 +53,9 @@ jobs:
       - name: Check Medium Severity Issues
         id: check-medium-issues
         run: |
-          number=$(grep -o 'Medium Severity Issues: [0-9]\+' snyk_report.txt | grep -o '[0-9]\+')
+          number=$(grep -o 'Medium Severity Issues: [0-9]\+' snyk_report.txt | grep -o '[0-9]\+' || echo 0)
           echo "::set-output name=number::$number"
-      
+
       - name: Upload Snyk scan report
         uses: actions/upload-artifact@v2
         with:
@@ -43,10 +63,11 @@ jobs:
           path: snyk_report.txt
 
       - name: Install Azure CLI
+        if: steps.check-medium-issues.outputs.number == '1'
         run: npm install -g azure-cli
 
       - name: Open Azure DevOps Ticket
-        if: steps.check-medium-issues.outputs.number == '3'
+        if: steps.check-medium-issues.outputs.number == '1'
         run: |
           az config set extension.use_dynamic_install=yes_without_prompt
           az extension add --name azure-devops
@@ -54,9 +75,9 @@ jobs:
           description=$(cat snyk_report.txt)
           az devops configure --defaults organization=https://dev.azure.com/markvolfson/ project=appsec-demo
           az boards work-item create --title "PR Failed - Snyk Results" --type "Task" --description "$description"
-      
+
       - name: Quality Gate
         id: quality-gate
-        if: steps.check-medium-issues.outputs.number == '3'
+        if: steps.check-medium-issues.outputs.number == '1'
         run: |
           failure("Code contains security vulnerabilities")
